@@ -1,0 +1,27 @@
+# Python virtual environment
+.venv/
+
+# Environment variables / secrets
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Node / React
+node_modules/
+frontend/dist/
+
+# Meeting uploads
+uploads/
+
+# FAISS generated index
+backend/app/rag/faiss_index/
+
+# IDE
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
