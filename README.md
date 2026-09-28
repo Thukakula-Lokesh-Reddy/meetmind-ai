@@ -1,37 +1,46 @@
-MeetMind AI — Meeting Intelligence
+# MeetMind AI — Meeting Intelligence
 
-Turn every meeting into action.
+> **Turn every meeting into action.**
 
-MeetMind AI is an AI-powered meeting intelligence system that transforms meeting recordings into structured, actionable information. It combines speech-to-text, speaker diarization, LLM-based analysis, PostgreSQL, and Retrieval-Augmented Generation (RAG) to help users understand meetings and interact with their meeting history through an AI assistant.
+MeetMind AI is an AI-powered meeting intelligence system that transforms meeting recordings into structured, actionable information.
 
-✨ Features
-🎙️ Audio & Video Meeting Upload
-📝 Automatic Speech-to-Text using WhisperX
-👥 Speaker Diarization to distinguish speakers
-🤖 AI Meeting Analysis using Gemini
-📌 Automatic Extraction of
-    Meeting summary
-    Participants
-    Decisions
-    Action items
-    Task owners
-    Deadlines
-📊 Meeting Dashboard for viewing and managing meetings
-🔄 Processing Status Tracking
-    Processing
-    Analyzed
-    Failed
-🔁 Retry Failed Meeting Analysis
-🗑️ Meeting & Action Item Management
-🔎 RAG-based AI Assistant
-💬 Ask Questions About Past Meetings
-🎯 Meeting-specific AI Questions
-📚 Source-aware AI Responses
-🗄️ PostgreSQL Database
-⚡ FastAPI REST API
-⚛️ React Frontend
+It combines **speech-to-text, speaker diarization, LLM-based analysis, PostgreSQL, and Retrieval-Augmented Generation (RAG)** to help users understand meetings and interact with their meeting history through an AI assistant.
 
-🏗️ System Architecture
+---
+
+## ✨ Features
+
+- 🎙️ Audio & Video Meeting Upload
+- 📝 Automatic Speech-to-Text using WhisperX
+- 👥 Speaker Diarization
+- 🤖 AI Meeting Analysis using Gemini
+- 📌 Automatic extraction of:
+  - Meeting Summary
+  - Participants
+  - Decisions
+  - Action Items
+  - Task Owners
+  - Deadlines
+- 📊 Meeting Dashboard
+- 🔄 Processing Status Tracking
+  - Processing
+  - Analyzed
+  - Failed
+- 🔁 Retry Failed Meeting Analysis
+- 🗑️ Meeting & Action Item Management
+- 🔎 RAG-based AI Assistant
+- 💬 Ask Questions About Past Meetings
+- 🎯 Meeting-specific AI Questions
+- 📚 Source-aware AI Responses
+- 🗄️ PostgreSQL Database
+- ⚡ FastAPI REST API
+- ⚛️ React Frontend
+
+---
+
+## 🏗️ System Architecture
+
+```text
                     ┌─────────────────────┐
                     │    React Frontend   │
                     │      Dashboard      │
