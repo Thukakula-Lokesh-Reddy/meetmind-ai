@@ -65,27 +65,21 @@ def _keyword_score(
         content
     )
 
-
     if not question_words:
-
         return 0.0
-
 
     overlap = (
         question_words &
         content_words
     )
 
-
     score = (
         len(overlap) /
         len(question_words)
     )
 
-
     question_lower = question.casefold()
     content_lower = content.casefold()
-
 
     # ========================================================
     # SECTION BOOSTS
@@ -102,9 +96,7 @@ def _keyword_score(
     ):
 
         if "decisions:" in content_lower:
-
             score += 0.30
-
 
     if any(
         word in question_lower
@@ -120,9 +112,7 @@ def _keyword_score(
     ):
 
         if "action items:" in content_lower:
-
             score += 0.30
-
 
     if any(
         word in question_lower
@@ -135,9 +125,7 @@ def _keyword_score(
     ):
 
         if "participants:" in content_lower:
-
             score += 0.30
-
 
     if any(
         word in question_lower
@@ -149,9 +137,7 @@ def _keyword_score(
     ):
 
         if "summary:" in content_lower:
-
             score += 0.30
-
 
     return score
 
@@ -159,18 +145,15 @@ def _keyword_score(
 def retrieve_relevant_chunks(
     question: str,
     chunks: list[dict],
-    top_k: int = 6
+    top_k: int = 6,
+    meeting_id: int | None = None
 ):
 
     if not question.strip():
-
         return []
-
 
     if not chunks:
-
         return []
-
 
     # ========================================================
     # QUESTION EMBEDDING
@@ -180,32 +163,48 @@ def retrieve_relevant_chunks(
         [question]
     )
 
-
     # ========================================================
     # LOAD FAISS
     # ========================================================
 
     index = load_faiss_index()
 
+    if index.ntotal == 0:
+        return []
 
     # ========================================================
-    # RETRIEVE MORE CANDIDATES
+    # RETRIEVE CANDIDATES
+    # ========================================================
+    #
+    # IMPORTANT:
+    # FAISS positions correspond to the ORIGINAL full
+    # chunk list.
+    #
+    # Therefore we must NOT filter the chunk list before
+    # using FAISS positions.
+    #
+    # For a meeting-specific search, we search the complete
+    # index and then filter candidates by meeting_id.
+    #
     # ========================================================
 
-    candidate_k = min(
-        max(top_k * 4, 12),
-        index.ntotal
-    )
+    if meeting_id is not None:
 
+        candidate_k = index.ntotal
+
+    else:
+
+        candidate_k = min(
+            max(top_k * 4, 12),
+            index.ntotal
+        )
 
     scores, indices = index.search(
         question_embedding,
         candidate_k
     )
 
-
     candidates = []
-
 
     for semantic_score, index_position in zip(
         scores[0],
@@ -213,36 +212,45 @@ def retrieve_relevant_chunks(
     ):
 
         if index_position == -1:
-
             continue
-
 
         if index_position >= len(chunks):
-
             continue
-
 
         chunk = chunks[
             index_position
         ]
 
+        # ====================================================
+        # MEETING FILTER
+        # ====================================================
+
+        if meeting_id is not None:
+
+            if int(
+                chunk.get(
+                    "meeting_id",
+                    -1
+                )
+            ) != int(meeting_id):
+
+                continue
+
+        # ====================================================
+        # KEYWORD SCORE
+        # ====================================================
 
         keyword_score = _keyword_score(
             question,
             chunk["content"]
         )
 
-
         # Semantic similarity remains the strongest signal.
-        #
-        # Keyword/section relevance is a secondary signal.
-
         final_score = (
             float(semantic_score) * 0.70
             +
             keyword_score * 0.30
         )
-
 
         candidates.append(
             {
@@ -266,7 +274,6 @@ def retrieve_relevant_chunks(
             }
         )
 
-
     # ========================================================
     # SORT BY FINAL RELEVANCE
     # ========================================================
@@ -276,7 +283,6 @@ def retrieve_relevant_chunks(
         reverse=True
     )
 
-
     # ========================================================
     # REMOVE DUPLICATE CHUNKS
     # ========================================================
@@ -285,7 +291,6 @@ def retrieve_relevant_chunks(
 
     seen = set()
 
-
     for candidate in candidates:
 
         key = (
@@ -293,11 +298,8 @@ def retrieve_relevant_chunks(
             candidate["chunk_id"]
         )
 
-
         if key in seen:
-
             continue
-
 
         seen.add(key)
 
@@ -305,10 +307,7 @@ def retrieve_relevant_chunks(
             candidate
         )
 
-
         if len(results) >= top_k:
-
             break
-
 
     return results

@@ -1,237 +1,220 @@
-MeetMind AI — Meeting Intelligence
+﻿# MeetMind AI — Meeting Intelligence
 
-Turn every meeting into action.
+**Turn every meeting into action.**
 
-MeetMind AI is an AI-powered meeting intelligence system that transforms meeting recordings into structured, actionable information. It combines speech-to-text, speaker diarization, LLM-based analysis, PostgreSQL, and Retrieval-Augmented Generation (RAG) to help users understand meetings and interact with their meeting history through an AI assistant.
+MeetMind AI transforms meeting audio and video into searchable, structured meeting intelligence. It combines speech recognition, speaker diarization, LLM-based analysis, PostgreSQL, and Retrieval-Augmented Generation (RAG).
 
-✨ Features
-🎙️ Audio & Video Meeting Upload
-📝 Automatic Speech-to-Text using WhisperX
-👥 Speaker Diarization to distinguish speakers
-🤖 AI Meeting Analysis using Gemini
-📌 Automatic Extraction of
-    Meeting summary
-    Participants
-    Decisions
-    Action items
-    Task owners
-    Deadlines
-📊 Meeting Dashboard for viewing and managing meetings
-🔄 Processing Status Tracking
-    Processing
-    Analyzed
-    Failed
-🔁 Retry Failed Meeting Analysis
-🗑️ Meeting & Action Item Management
-🔎 RAG-based AI Assistant
-💬 Ask Questions About Past Meetings
-🎯 Meeting-specific AI Questions
-📚 Source-aware AI Responses
-🗄️ PostgreSQL Database
-⚡ FastAPI REST API
-⚛️ React Frontend
+## Features
 
-🏗️ System Architecture
-                    ┌─────────────────────┐
-                    │    React Frontend   │
-                    │      Dashboard      │
-                    └──────────┬──────────┘
-                               │
-                            REST API
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │    FastAPI Backend  │
-                    └──────────┬──────────┘
-                               │
-              ┌────────────────┼────────────────┐
-              │                │                │
-              ▼                ▼                ▼
-       ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-       │ PostgreSQL  │  │  WhisperX   │  │   Gemini    │
-       │  Database   │  │    STT +    │  │     LLM     │
-       │             │  │ Diarization │  │   Analysis  │
-       └─────────────┘  └─────────────┘  └─────────────┘
-                                               │
-                                               ▼
-                                      ┌─────────────────┐
-                                      │       RAG       │
-                                      ├─────────────────┤
-                                      │ Document Loader │
-                                      │     Chunker     │
-                                      │   Embeddings    │
-                                      │      FAISS      │
-                                      │    Retriever    │
-                                      │   AI Assistant  │
-                                      └─────────────────┘
+- Audio and video meeting uploads
+- Speech-to-text transcription using WhisperX
+- Speaker diarization
+- AI-generated meeting summaries
+- Extraction of decisions, participants, action items, owners, and deadlines
+- Meeting and action-item management
+- Retry support for failed meeting analysis
+- RAG-based AI assistant for questions about past meetings
+- Meeting-specific retrieval and source-aware answers
+- Manual email reminders for action items
+- FastAPI REST API and React dashboard
+- Docker Compose deployment with PostgreSQL
 
-🔄 Meeting Processing Pipeline
-Meeting Audio / Video
-        │
-        ▼
-     WhisperX
-        │
-        ├── Speech-to-Text
-        │
-        └── Speaker Diarization
-        │
-        ▼
-     Transcript
-        │
-        ▼
-      Gemini
-        │
-        ├── Summary
-        ├── Participants
-        ├── Decisions
-        ├── Action Items
-        ├── Owners
-        └── Deadlines
-        │
-        ▼
-    PostgreSQL
-        │
-        ▼
-     React Dashboard
+## Architecture
 
-🧠 RAG Pipeline
-MeetMind AI includes a Retrieval-Augmented Generation system that allows users to ask questions about their previous meetings.
-PostgreSQL Meeting Data
-        │
-        ▼
- Document Loader
-        │
-        ▼
-     Chunking
-        │
-        ▼
- Sentence Transformer
-(all-MiniLM-L6-v2)
-        │
-        ▼
-   384-D Embeddings
-        │
-        ▼
-      FAISS
-        │
-        ▼
- Semantic + Keyword Retrieval
-        │
-        ▼
-     Reranking
-        │
-        ▼
- Relevant Meeting Context
-        │
-        ▼
-       Gemini
-        │
-        ▼
- AI Answer + Sources
+```text
+React + Vite frontend
+        |
+        | HTTP / REST API
+        v
+FastAPI backend
+        |
+        +---- WhisperX: transcription and diarization
+        |
+        +---- Gemini: meeting analysis and AI answers
+        |
+        +---- Sentence Transformers + FAISS: RAG retrieval
+        |
+        +---- Email service: manual reminders
+        |
+        v
+PostgreSQL database
+```
 
+### Meeting processing pipeline
 
-RAG Components
+1. Upload a supported audio or video recording.
+2. WhisperX transcribes the recording and identifies speaker segments.
+3. The LLM analyzes the transcript.
+4. The application extracts the summary, decisions, participants, and action items.
+5. Structured meeting information is stored in PostgreSQL.
+6. The dashboard displays the results.
 
-| Component              | Responsibility                 
-                              |
-| ---------------------- | ------------------------------------------------------------ |
-| `document_loader.py`   | Converts meeting information into searchable documents       |
-| `chunker.py`           | Splits meeting documents into smaller retrievable chunks     |
-| `embedding_service.py` | Generates embeddings using `all-MiniLM-L6-v2`                |
-| `vector_store.py`      | Stores and searches embeddings using FAISS                   |
-| `retriever.py`         | Retrieves and reranks relevant meeting chunks                |
-| `rag_service.py`       | Orchestrates retrieval, context creation and Gemini response |
+### RAG pipeline
 
-🛠️ Tech Stack
-Frontend
-React
-Vite
-Axios
-CSS
-Backend
-Python
-FastAPI
-Pydantic
-SQLAlchemy
-AI / ML
-WhisperX
-Gemini
-Sentence Transformers
-all-MiniLM-L6-v2
-FAISS
-Database
-PostgreSQL
-Development
-Git
-GitHub
-REST APIs
-JSON
+1. Meeting content is converted into searchable documents.
+2. Documents are split into retrievable chunks.
+3. Sentence Transformers generates embeddings using `all-MiniLM-L6-v2`.
+4. FAISS supports vector similarity search.
+5. Retrieval and reranking select relevant meeting context.
+6. Gemini generates an answer grounded in the retrieved context.
 
-📂 Project Structure
+## Technology stack
+
+| Area | Technologies |
+|---|---|
+| Frontend | React, Vite, Axios, CSS |
+| Backend | Python, FastAPI, Pydantic, SQLAlchemy |
+| Speech processing | WhisperX |
+| LLM | Google Gemini |
+| RAG | Sentence Transformers, FAISS |
+| Database | PostgreSQL |
+| Email | SMTP |
+| Containers | Docker, Docker Compose |
+
+## Project structure
+
+```text
 meetmind-ai/
-│
 ├── backend/
-│   └── app/
-│       ├── main.py
-│       ├── database.py
-│       ├── models.py
-│       ├── schemas.py
-│       ├── llm_service.py
-│       ├── whisper_service.py
-│       │
-│       └── rag/
-│           ├── document_loader.py
-│           ├── chunker.py
-│           ├── embedding_service.py
-│           ├── vector_store.py
-│           ├── retriever.py
-│           └── rag_service.py
-│
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── database.py
+│   │   ├── models.py
+│   │   ├── schemas.py
+│   │   ├── llm_service.py
+│   │   ├── whisper_service.py
+│   │   ├── email_service.py
+│   │   ├── reminder_scheduler.py
+│   │   └── rag/
+│   ├── requirements.txt
+│   └── Dockerfile
 ├── frontend/
-│   └── src/
-│       ├── App.jsx
-│       ├── App.css
-│       ├── index.css
-│       └── main.jsx
-│
-├── uploads/
+│   ├── src/
+│   └── Dockerfile
+├── uploads/                  # Local meeting files; not committed
+├── compose.yaml
 ├── .env.example
 ├── .gitignore
+├── .dockerignore
 └── README.md
+```
 
+## Requirements
 
-🎯 Project Goals
+- Docker Desktop with Docker Compose
+- A Gemini API key
+- A Hugging Face token if required by the selected WhisperX diarization model
+- SMTP credentials if email reminders are to be sent
 
-MeetMind AI was designed to address a common meeting-management problem: important decisions and action items can become difficult to track after a meeting.
+The first build and first model initialization may take several minutes and download large dependencies or models.
 
-The system aims to turn unstructured meeting conversations into structured information that users can:
+## Run with Docker Compose
 
-    Review
-    Search
-    Track
-    Question using natural language
-    Use for follow-up actions
-🔮 Future Improvements
+### 1. Clone the repository
 
-Potential future improvements include:
+```powershell
+git clone https://github.com/Thukakula-Lokesh-Reddy/meetmind-ai.git
+cd meetmind-ai
+```
 
-    Background job processing for long meetings
-    Faster Whisper models for lightweight deployments
-    Improved RAG indexing and caching
-    Better speaker-name resolution
-    Email reminders for action items
-    Advanced meeting analytics
-    Authentication and role-based access control
-    Production deployment with Docker
-    Improved monitoring and error handling
+### 2. Configure environment variables
 
-👨‍💻 Author
-Thukakula Lokesh Reddy
+Create your local `.env` from the example:
 
-B.Tech — Computer Science
+```powershell
+Copy-Item .env.example .env
+```
 
-GitHub: Thukakula-Lokesh-Reddy
+Edit `.env` locally and set the required database credentials, Gemini API key, Hugging Face token, and any SMTP settings used by your configuration.
 
-📄 License
+Never commit `.env` or paste its secrets into public issues or logs.
 
-This project is intended primarily as a learning and portfolio project
+### 3. Build and start the services
+
+```powershell
+docker compose build
+docker compose up -d
+```
+
+### 4. Check service status
+
+```powershell
+docker compose ps
+docker compose logs --tail 100 backend
+```
+
+### 5. Open the application
+
+- Frontend: http://localhost:8080
+- FastAPI documentation: http://localhost:8000/docs
+
+The frontend uses the API URL configured at build time. For remote deployments, configure `VITE_API_URL` to the appropriate reachable backend URL and rebuild the frontend.
+
+### 6. Stop the application
+
+```powershell
+docker compose down
+```
+
+This stops and removes the containers but preserves the named PostgreSQL volume. Do not use `docker compose down -v` unless you intentionally want to remove that volume and its database data.
+
+## Local development
+
+For local development without Docker, install the Python dependencies from `backend/requirements.txt`, configure `.env`, start PostgreSQL, and run the backend from the directory expected by its imports.
+
+Run the frontend from the `frontend` directory:
+
+```powershell
+npm install
+npm run dev
+```
+
+Use the Docker workflow above for the simplest reproducible setup.
+
+## Data and privacy
+
+- Meeting recordings and transcripts can contain confidential information.
+- Local uploads, database backups, environment files, and generated FAISS data should not be committed to Git.
+- Docker stores PostgreSQL data in a named volume.
+- The project currently provides manual email reminders; verify recipient configuration before sending messages.
+- Back up important database data before making schema or deployment changes.
+
+## Troubleshooting
+
+View service logs:
+
+```powershell
+docker compose logs --tail 100 backend
+docker compose logs --tail 50 frontend
+docker compose logs --tail 50 db
+```
+
+Check running containers:
+
+```powershell
+docker compose ps
+```
+
+If the frontend cannot reach the API, verify that the backend is running, the configured API URL is correct, and the frontend origin is allowed by the backend CORS configuration.
+
+If meeting analysis fails, inspect backend logs and verify the relevant API credentials and model access.
+
+## Future improvements
+
+- Background processing for long recordings
+- Authentication and role-based access control
+- Improved job status reporting and retry handling
+- Enhanced monitoring and error reporting
+- More advanced meeting analytics
+
+## Author
+
+**Thukakula Lokesh Reddy**
+
+B.Tech, Computer Science
+
+GitHub: [Thukakula-Lokesh-Reddy](https://github.com/Thukakula-Lokesh-Reddy)
+
+## License
+
+No license has been specified yet. Contact the author before reusing or redistributing this project.

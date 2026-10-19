@@ -10,22 +10,54 @@ from sqlalchemy.orm import Session
 from schemas import ChatRequest
 
 from database import SessionLocal, engine, get_db
-from models import Base, Meeting, Participant, ActionItem
+
+from models import (
+    Base,
+    Meeting,
+    Participant,
+    ActionItem,
+    ReminderRecipient
+)
+
 from whisper_service import transcribe_audio
 from llm_service import (
     AIServiceUnavailable,
     analyze_transcript
 )
 
+from email_service import send_action_item_reminder
+from contextlib import asynccontextmanager
+
+try:
+    from .reminder_scheduler import (
+        start_reminder_scheduler,
+        stop_reminder_scheduler,
+    )
+except ImportError:
+    from reminder_scheduler import (
+        start_reminder_scheduler,
+        stop_reminder_scheduler,
+    )
+
 
 # ============================================================
 # FASTAPI APPLICATION
 # ============================================================
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    start_reminder_scheduler()
+
+    try:
+        yield
+    finally:
+        stop_reminder_scheduler()
+
 app = FastAPI(
     title="MeetMind AI API",
     description="AI-powered Meeting Intelligence API",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 
@@ -37,7 +69,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -1126,6 +1160,108 @@ def delete_action_item(
 
     return {
         "message": "Action item deleted successfully"
+    }
+
+
+# ============================================================
+# SEND ACTION ITEM REMINDER
+# ============================================================
+
+@app.post("/action-items/{action_item_id}/send-reminder")
+def send_action_item_reminder_endpoint(
+    action_item_id: int,
+    db: Session = Depends(get_db)
+):
+    # 1. Find the action item.
+    action_item = (
+        db.query(ActionItem)
+        .filter(ActionItem.id == action_item_id)
+        .first()
+    )
+
+    if not action_item:
+        raise HTTPException(
+            status_code=404,
+            detail="Action item not found"
+        )
+
+    # 2. Do not send reminders for completed tasks.
+    if action_item.status == "Completed":
+        raise HTTPException(
+            status_code=400,
+            detail="This action item is already completed."
+        )
+
+    # 3. Validate the owner and deadline.
+    if not action_item.owner or not action_item.owner.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="This action item has no assigned owner."
+        )
+
+    if not action_item.deadline or not action_item.deadline.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="This action item has no deadline."
+        )
+
+    # 4. Find the recipient using a case-insensitive name match.
+    recipient = (
+        db.query(ReminderRecipient)
+        .filter(
+            ReminderRecipient.name.ilike(
+                action_item.owner.strip()
+            )
+        )
+        .first()
+    )
+
+    if not recipient:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                "No email recipient is configured for owner: "
+                f"{action_item.owner}"
+            )
+        )
+
+    # 5. Never send to placeholder email addresses.
+    if (
+        not recipient.email
+        or recipient.email.strip().lower().endswith("@example.com")
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "The owner's email address is a placeholder. "
+                "Update reminder_recipients with a real email "
+                "address you can access before sending."
+            )
+        )
+
+    # 6. Send the email and handle delivery errors.
+    try:
+        send_action_item_reminder(
+            recipient_email=recipient.email,
+            owner=action_item.owner,
+            task=action_item.task,
+            deadline=action_item.deadline
+        )
+
+    except Exception:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "The reminder email could not be sent. "
+                "Check the SMTP configuration and server logs."
+            )
+        )
+
+    return {
+        "message": "Action item reminder sent successfully.",
+        "action_item_id": action_item.id,
+        "owner": action_item.owner,
+        "recipient_email": recipient.email
     }
 
 # ============================================================

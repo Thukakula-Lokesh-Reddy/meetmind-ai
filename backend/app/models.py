@@ -1,8 +1,15 @@
-from datetime import datetime, timezone
+from datetime import date,datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import (
+    Date,
+    DateTime,
+    ForeignKey,
+    String,
+    Text,
+    Integer,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-
+from sqlalchemy import func
 
 class Base(DeclarativeBase):
     pass
@@ -142,6 +149,16 @@ class ActionItem(Base):
         nullable=True
     )
 
+    reminder_deadline: Mapped[datetime | None] = mapped_column(
+    Date,
+    nullable=True
+    )
+
+    last_reminded_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
     status: Mapped[str] = mapped_column(
         String(50),
         nullable=False,
@@ -159,4 +176,90 @@ class ActionItem(Base):
 
     meeting: Mapped["Meeting"] = relationship(
         back_populates="action_item_records"
+    )
+
+# ============================================================
+# REMINDER RECIPIENT
+# ============================================================
+
+class ReminderRecipient(Base):
+    __tablename__ = "reminder_recipients"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True
+    )
+
+    name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        unique=True
+    )
+
+    email: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False
+    )
+
+
+class ReminderLog(Base):
+    __tablename__ = "reminder_logs"
+
+    __table_args__ = (
+        {
+            "comment": "Tracks automatic action-item reminder attempts"
+        },
+    )
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        index=True
+    )
+
+    action_item_id: Mapped[int] = mapped_column(
+        ForeignKey("action_items.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    reminder_type: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False
+    )
+
+    scheduled_for: Mapped[date] = mapped_column(
+        Date,
+        nullable=False
+    )
+
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="Pending"
+    )
+
+    attempt_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0
+    )
+
+    last_attempt_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    sent_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    error_message: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now()
     )

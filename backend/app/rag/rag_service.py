@@ -20,7 +20,10 @@ load_dotenv()
 # ============================================================
 
 client = genai.Client(
-    api_key=os.getenv("GEMINI_API_KEY")
+    api_key=os.getenv("GEMINI_API_KEY"),
+    http_options=types.HttpOptions(
+        timeout=30000
+    )
 )
 
 
@@ -29,9 +32,10 @@ client = genai.Client(
 # ============================================================
 
 GEMINI_MODELS = [
+    "gemini-3.5-flash",
     "gemini-3.8-flash",
     "gemini-3.7-flash",
-    "gemini-3.6-flash",
+    "gemini-3.6-flash"
 ]
 
 
@@ -92,49 +96,24 @@ def ask_meeting_assistant(
         chunk_overlap=100
     )
 
-    # ========================================================
-    # OPTIONAL MEETING FILTER
-    # ========================================================
-    # meeting_id=None  -> search across all meetings
-    # meeting_id=<id>  -> search only the selected meeting
-    # Filter BEFORE retrieval so unrelated meetings cannot enter
-    # the retrieval budget or appear in the answer sources.
+     # ========================================================
+    # VALIDATE OPTIONAL MEETING FILTER
     # ========================================================
 
     if meeting_id is not None:
 
         try:
             meeting_id = int(meeting_id)
+
         except (TypeError, ValueError):
+
             return {
                 "answer": "Invalid meeting ID.",
                 "sources": []
             }
 
-        chunks = [
-            chunk
-            for chunk in chunks
-            if int(chunk.get("meeting_id", -1)) == meeting_id
-        ]
-
-        if not chunks:
-            return {
-                "answer": (
-                    "I couldn't find that meeting or it has no "
-                    "usable meeting information."
-                ),
-                "sources": []
-            }
 
 
-    if not chunks:
-
-        return {
-            "answer": (
-                "I couldn't find usable meeting information."
-            ),
-            "sources": []
-        }
 
 
     # ========================================================
@@ -144,7 +123,8 @@ def ask_meeting_assistant(
     results = retrieve_relevant_chunks(
         question,
         chunks,
-        top_k=top_k
+        top_k=top_k,
+        meeting_id=meeting_id
     )
 
 
@@ -238,7 +218,14 @@ Prioritize:
 - owner
 - deadline
 
-Do not confuse discussion with assigned work.
+If the user asks for tasks assigned to a specific person,
+return ONLY the tasks assigned to that person.
+
+Do not include tasks belonging to other people.
+
+Include the deadline when it is available.
+
+Do not include unrelated meeting information.
 """
 
 
@@ -405,22 +392,50 @@ Do not guess.
 ANSWER STYLE
 ============================================================
 
-For one fact:
+Write the final answer in simple, natural language.
 
-"Rahul is responsible for the marketing campaign."
+The answer must be easy for a normal user to understand.
 
-For several facts:
+Do NOT use Markdown formatting.
 
-- Task A — Priya — Monday
-- Task B — Rahul — Thursday
+Do NOT use:
+- **
+- *
+- #
+- backticks
+- Markdown headings
+- Markdown tables
 
-For a decision:
+For one fact, answer in one simple sentence.
 
-"The team agreed to target September 25 for the launch."
+Example:
 
-For participants:
+Rahul is responsible for the marketing campaign.
 
-"The participants were Arjun, Priya, Rahul, and Neha."
+For several facts, use simple numbered lines.
+
+Example:
+
+1. Priya — Finish the meeting details page — Deadline: Monday.
+2. Priya — Complete the AI assistant interface — Deadline: Wednesday.
+
+For a decision, answer naturally.
+
+Example:
+
+The team agreed to target September 25 for the launch.
+
+For participants, answer naturally.
+
+Example:
+
+The participants were Arjun, Priya, Rahul, and Neha.
+
+Keep the answer concise.
+
+Do not repeat the same information unnecessarily.
+
+Do not mention the internal RAG process.
 
 ============================================================
 MEETING INFORMATION
@@ -478,9 +493,7 @@ FINAL ANSWER
 
                     config=types.GenerateContentConfig(
 
-                        thinking_config=types.ThinkingConfig(
-                            thinking_level="medium"
-                        )
+
 
                     )
 
@@ -504,31 +517,30 @@ FINAL ANSWER
                     )
 
 
-                return {
-                    "answer": answer,
 
-                    "sources": [
-                        {
-                            "meeting_id": result[
-                                "meeting_id"
-                            ],
 
-                            "title": result[
-                                "title"
-                            ],
+                unique_sources = {}
 
-                            "chunk_id": result[
-                                "chunk_id"
-                            ],
+                for result in results:
 
-                            "score": result[
-                                "score"
-                            ]
+                    meeting_id = result["meeting_id"]
+
+                    if meeting_id not in unique_sources:
+
+                        unique_sources[meeting_id] = {
+                            "meeting_id": meeting_id,
+                            "title": result["title"],
+                            "score": result["score"]
                         }
 
-                        for result in results
-                    ]
+
+                return {
+                    "answer": answer,
+                    "sources": list(
+                        unique_sources.values()
+                    )
                 }
+
 
 
             except errors.ServerError as error:

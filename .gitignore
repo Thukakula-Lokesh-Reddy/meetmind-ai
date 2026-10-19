@@ -25,3 +25,10 @@ backend/app/rag/faiss_index/
 # OS files
 .DS_Store
 Thumbs.db
+# Local database exports and backups
+*.sql
+*.dump
+*.backup
+
+# Local test email script
+backend/app/test_email.py

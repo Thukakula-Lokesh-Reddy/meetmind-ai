@@ -3,7 +3,8 @@ import axios from "axios";
 import "./App.css";
 
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 
 function App() {
@@ -31,6 +32,8 @@ function App() {
 
   const [actionItemsError, setActionItemsError] = useState("");
 const [updatingActionItem, setUpdatingActionItem] = useState(null);
+const [sendingReminderId, setSendingReminderId] = useState(null);
+const [reminderFeedback, setReminderFeedback] = useState({});
 
 const [deletingMeetingId, setDeletingMeetingId] = useState(null);
 const [retryingMeetingId, setRetryingMeetingId] = useState(null);
@@ -496,6 +499,54 @@ const [aiMeetingId, setAiMeetingId] = useState("");
     }
   };
 
+  // ============================================================
+// SEND ACTION ITEM REMINDER
+// ============================================================
+
+const sendActionItemReminder = async (actionItemId) => {
+  try {
+    setSendingReminderId(actionItemId);
+
+    setReminderFeedback((previous) => ({
+      ...previous,
+      [actionItemId]: {
+        type: "info",
+        message: "Sending reminder..."
+      }
+    }));
+
+    const response = await axios.post(
+      `${API_URL}/action-items/${actionItemId}/send-reminder`
+    );
+
+    setReminderFeedback((previous) => ({
+      ...previous,
+      [actionItemId]: {
+        type: "success",
+        message:
+          response.data.message ||
+          "Reminder sent successfully."
+      }
+    }));
+
+  } catch (error) {
+    console.error("Failed to send reminder:", error);
+
+    setReminderFeedback((previous) => ({
+      ...previous,
+      [actionItemId]: {
+        type: "error",
+        message:
+          error.response?.data?.detail ||
+          "Unable to send reminder. Please try again."
+      }
+    }));
+
+  } finally {
+    setSendingReminderId(null);
+  }
+};
+
 
   // ============================================================
   // CLOSE ACTION ITEMS
@@ -541,9 +592,18 @@ const [aiMeetingId, setAiMeetingId] = useState("");
         response.data.answer || "No answer returned."
       );
 
-      setAiSources(
-        response.data.sources || []
+      const sources = response.data.sources || [];
+
+      const uniqueSources = Array.from(
+        new Map(
+          sources.map((source) => [
+            source.meeting_id,
+            source
+          ])
+        ).values()
       );
+
+      setAiSources(uniqueSources);
 
     } catch (error) {
 
@@ -848,7 +908,7 @@ if (showMeetings) {
             </button>
 
 
-           
+
             <button
               className="nav-link active"
               onClick={openMeetings}
@@ -1690,6 +1750,9 @@ if (showMeetings) {
                           <th style={{ padding: "16px 24px", fontWeight: 600 }}>Owner</th>
                           <th style={{ padding: "16px 24px", fontWeight: 600 }}>Deadline</th>
                           <th style={{ padding: "16px 24px", fontWeight: 600 }}>Status</th>
+                          <th style={{ padding: "16px 24px", fontWeight: 600 }}>
+                            Reminder
+                          </th>
                         </tr>
                       </thead>
 
@@ -1807,6 +1870,67 @@ if (showMeetings) {
                                 </option>
                               </select>
                             </td>
+
+                            <td style={{ padding: "18px 24px", minWidth: "190px" }}>
+                              <button
+                                type="button"
+                                onClick={() => sendActionItemReminder(item.id)}
+                                disabled={
+                                  item.status === "Completed" ||
+                                  sendingReminderId !== null
+                                }
+                                title={
+                                  item.status === "Completed"
+                                    ? "Completed tasks cannot receive reminders"
+                                    : "Send an email reminder to the task owner"
+                                }
+                                style={{
+                                  padding: "9px 12px",
+                                  borderRadius: "8px",
+                                  border: "1px solid rgba(126, 92, 245, 0.45)",
+                                  background: "rgba(126, 92, 245, 0.14)",
+                                  color: "#c1b5ff",
+                                  fontSize: "12px",
+                                  fontWeight: 600,
+                                  cursor:
+                                    item.status === "Completed" ||
+                                    sendingReminderId !== null
+                                      ? "not-allowed"
+                                      : "pointer",
+                                  opacity:
+                                    item.status === "Completed" ||
+                                    sendingReminderId !== null
+                                      ? 0.55
+                                      : 1
+                                }}
+                              >
+                                {sendingReminderId === item.id
+                                  ? "Sending..."
+                                  : "✉ Send Reminder"}
+                              </button>
+
+                              {reminderFeedback[item.id] && (
+                                <div
+                                  role="status"
+                                  style={{
+                                    marginTop: "8px",
+                                    maxWidth: "220px",
+                                    fontSize: "11px",
+                                    lineHeight: 1.5,
+                                    overflowWrap: "anywhere",
+                                    color:
+                                      reminderFeedback[item.id].type === "success"
+                                        ? "#4ade80"
+                                        : reminderFeedback[item.id].type === "error"
+                                          ? "#fca5a5"
+                                          : "#c1b5ff"
+                                  }}
+                                >
+                                  {reminderFeedback[item.id].message}
+                                </div>
+                              )}
+                            </td>
+
                           </tr>
                         ))}
                       </tbody>
@@ -3301,7 +3425,7 @@ if (showMeetings) {
               </div>
 
 
-              <button 
+              <button
                 className="text-button"
                 onClick={openMeetings}
               >

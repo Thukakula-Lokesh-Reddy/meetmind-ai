@@ -1,0 +1,15 @@
+.git
+.venv
+**/__pycache__
+**/*.pyc
+**/node_modules
+frontend/dist
+.env
+**/.env
+uploads
+backend/app/rag/faiss_index
+
+# Database exports and backups
+*.sql
+*.dump
+*.backup
