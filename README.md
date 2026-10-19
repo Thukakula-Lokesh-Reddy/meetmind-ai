@@ -4,6 +4,14 @@
 
 MeetMind AI transforms meeting audio and video into searchable, structured meeting intelligence. It combines speech recognition, speaker diarization, LLM-based analysis, PostgreSQL, and Retrieval-Augmented Generation (RAG).
 
+## 🎬 Project Demonstration
+
+Watch the MeetMind AI application demo:
+
+[**▶ Watch MeetMind AI Demo Video**](https://drive.google.com/file/d/10BZ1QuOi6KTEd_xfqzWmYPuktR319n8O/view?usp=sharing)
+
+The demonstration covers meeting analysis, transcription, summaries, action items, and RAG-based chat with past meetings.
+
 ## Features
 
 - Audio and video meeting uploads
